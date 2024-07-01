@@ -7,7 +7,9 @@ import rl "vendor:raylib"
 
 import "core:time"
 
-PIXEL_SCALE :: 10
+PIXEL_SCALE :: 20
+
+FRAMES_TO_TICK :: 60
 
 Pixel :: struct
 {
@@ -149,6 +151,22 @@ get_neighborhood :: proc(world: ^World, pixel: ^Pixel) -> Neighborhood
 	return neighborhood
 }
 
+neighbor_count :: proc(neighborhood: ^Neighborhood) -> int
+{
+	neighbors: int
+
+	neighbors += int(neighborhood.up.on)
+	neighbors += int(neighborhood.up_left.on)
+	neighbors += int(neighborhood.up_right.on)
+	neighbors += int(neighborhood.right.on)
+	neighbors += int(neighborhood.down_right.on)
+	neighbors += int(neighborhood.down.on)
+	neighbors += int(neighborhood.down_left.on)
+	neighbors += int(neighborhood.left.on)
+
+	return neighbors
+}
+
 initpix :: proc(pixel: ^Pixel, x: int, y: int)
 {
 	pixel.color = rl.BLACK
@@ -157,7 +175,7 @@ initpix :: proc(pixel: ^Pixel, x: int, y: int)
 
 }
 
-updateworld :: proc(world: ^World)
+updateworld :: proc(world: ^World, live: bool = true)
 {
 	// if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){ 0, 0, GetScreenWidth(), GetScreenHeight()
 	// {
@@ -176,38 +194,63 @@ updateworld :: proc(world: ^World)
 
 		pix: ^Pixel = &world.pixels[index]
 
-		mousepix(pix)
+		mousepix(pix, live)
 	}
 }
 
-mousepix :: proc(pixel: ^Pixel)
+mousepix :: proc(pixel: ^Pixel, live: bool = true)
 {
-	pixel.next = true
+	pixel.next = live
 }
 
-updatepix :: proc(world: ^World, pixel: ^Pixel)
+tickpix :: proc(world: ^World, pixel: ^Pixel)
 {
 	neighborhood := get_neighborhood(world, pixel)
 
-	if (neighborhood.up.on ||
-		neighborhood.up_right.on ||
-		neighborhood.right.on ||
-		neighborhood.down_right.on ||
-		neighborhood.down.on ||
-		neighborhood.down_left.on ||
-		neighborhood.left.on ||
-		neighborhood.up_left.on)
-	{
-		pixel.next = true
-	}
-	else if (!pixel.on)
-	{
-		pixel.next = false
-	}
+	// Flood Fill
+	// if (neighborhood.up.on ||
+	// 	neighborhood.up_right.on ||
+	// 	neighborhood.right.on ||
+	// 	neighborhood.down_right.on ||
+	// 	neighborhood.down.on ||
+	// 	neighborhood.down_left.on ||
+	// 	neighborhood.left.on ||
+	// 	neighborhood.up_left.on)
+	// {
+	// 	pixel.next = true
+	// }
+	// else if (!pixel.on)
+	// {
+	// 	pixel.next = false
+	// }
 
+	neighbors := neighbor_count(&neighborhood)
+
+	if pixel.on
+	{
+		if neighbors < 2
+		{
+			pixel.next = false
+		}
+		else if neighbors == 2 || neighbors == 3
+		{
+			pixel.next = true
+		}
+		else if neighbors > 3
+		{
+			pixel.next = false
+		}
+	}
+	else
+	{
+		if neighbors == 3
+		{
+			pixel.next = true
+		}
+	}
 }
 
-tickpix :: proc(pixel: ^Pixel)
+updatepix :: proc(pixel: ^Pixel)
 {
 	pixel.on = pixel.next
 }
@@ -233,6 +276,10 @@ main :: proc()
 
 	rl.InitWindow(1280, 720, "Hello")
 
+	tick_counter: int
+
+	paused: bool
+
 	for !rl.WindowShouldClose()
 	{
 		rl.BeginDrawing()
@@ -241,18 +288,32 @@ main :: proc()
 		{
 			updateworld(&world)
 		}
+		else if rl.IsMouseButtonDown(.RIGHT)
+		{
+			updateworld(&world, false)
+		}
 
 		if rl.IsKeyPressed(.SPACE)
 		{
+			paused = !paused
+		}
+		if !paused
+		{
+			tick_counter += 1
+		}
+
+		if tick_counter >= FRAMES_TO_TICK
+		{
 			for &pixel in world.pixels
 			{
-				updatepix(&world, &pixel)
-			}	
+				tickpix(&world, &pixel)
+			}
+			tick_counter = 0
 		}
 
 		for &pixel in world.pixels
 		{
-			tickpix(&pixel)
+			updatepix(&pixel)
 			drawpix(&pixel)
 		}	
 		rl.EndDrawing()
