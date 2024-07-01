@@ -1,4 +1,4 @@
-package chess
+package pixel_sim
 
 import "core:fmt"
 import "core:math/rand"
@@ -41,6 +41,16 @@ Neighborhood :: struct
 coord2index :: proc(x: int, y: int, width: int) -> int
 {
 	return (y * width) + x
+}
+
+index2y :: proc(index: int, width: int) -> int
+{
+	return index / width
+}
+
+index2x :: proc(index: int width: int) -> int
+{
+	return index % width
 }
 
 index2Coord :: proc(index: int, width: int) -> (x: int, y: int)
@@ -104,35 +114,35 @@ get_neighborhood :: proc(world: ^World, pixel: ^Pixel) -> Neighborhood
 	pix_down 	   := index + down
 	pix_down_left  := index + left + down
 
-	if (pix_left >= 0 && pix_left <= (world.size - 1))
+	if pix_left >= 0 && pix_left <= (world.size - 1) && index2x(pix_left, world.width) == (x + left)
 	{
 		neighborhood.left = world.pixels[pix_left]
 	}
-	if (pix_right >= 0 && pix_right <=(world.size - 1))
+	if pix_right >= 0 && pix_right <=(world.size - 1) && index2x(pix_right, world.width) == (x + right)
 	{
 		neighborhood.right = world.pixels[pix_right]
 	}
-	if (pix_up >= 0 && pix_up <= (world.size - 1))
+	if pix_up >= 0 && pix_up <= (world.size - 1) && index2y(pix_up, world.width) == (y - 1)
 	{
 		neighborhood.up = world.pixels[pix_up]
 	}
-	if (pix_down >= 0 && pix_down <=(world.size - 1))
+	if pix_down >= 0 && pix_down <=(world.size - 1) && index2y(pix_down, world.width) == (y + 1)
 	{
 		neighborhood.down = world.pixels[pix_down]
 	}
-	if (pix_up_left >= 0 && pix_up_left <= (world.size - 1))
+	if pix_up_left >= 0 && pix_up_left <= (world.size - 1) && index2y(pix_up_left, world.width) == (y - 1) && index2x(pix_up_left, world.width) == (x + left)
 	{
 		neighborhood.up_left = world.pixels[pix_up_left]
 	}
-	if (pix_up_right >= 0 && pix_up_right <= (world.size - 1))
+	if pix_up_right >= 0 && pix_up_right <= (world.size - 1) && index2y(pix_up_right, world.width) == (y - 1) && index2x(pix_up_right, world.width) == (x + right)
 	{
 		neighborhood.up_right = world.pixels[pix_up_right]
 	}
-	if (pix_down_left >= 0 && pix_down_left <= (world.size - 1))
+	if pix_down_left >= 0 && pix_down_left <= (world.size - 1) && index2y(pix_down_left, world.width) == (y + 1) && index2x(pix_up_right, world.width) == (x + left)
 	{
 		neighborhood.down_left = world.pixels[pix_down_left]
 	}
-	if (pix_down_right >= 0 && pix_down_right <= (world.size - 1))
+	if pix_down_right >= 0 && pix_down_right <= (world.size - 1) && index2y(pix_down_right, world.width) == (y + 1) && index2x(pix_down_right, world.width) == (x + right)
 	{
 		neighborhood.down_right = world.pixels[pix_down_right]
 	}
@@ -165,7 +175,6 @@ mousepix :: proc(pixel: ^Pixel)
 
 updatepix :: proc(world: ^World, pixel: ^Pixel)
 {
-	// TODO(rahul): Fix weird bug which causes holes.
 	neighborhood := get_neighborhood(world, pixel)
 
 	if (neighborhood.up.on ||
@@ -179,7 +188,7 @@ updatepix :: proc(world: ^World, pixel: ^Pixel)
 	{
 		pixel.next = true
 	}
-	else
+	else if (!pixel.on)
 	{
 		pixel.next = false
 	}
