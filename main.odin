@@ -4,7 +4,8 @@ import "core:fmt"
 import "core:math/rand"
 import "core:math"
 import rl "vendor:raylib"
-import "core:os"
+
+import "core:time"
 
 PIXEL_SCALE :: 10
 
@@ -90,8 +91,6 @@ snap2world :: proc(x: f32, y: f32) -> rl.Vector2
 
 get_neighborhood :: proc(world: ^World, pixel: ^Pixel) -> Neighborhood
 {
-	// TODO(rahul): Fix wrap around.
-
 	neighborhood: Neighborhood
 
 	x := pixel.x
@@ -138,7 +137,7 @@ get_neighborhood :: proc(world: ^World, pixel: ^Pixel) -> Neighborhood
 	{
 		neighborhood.up_right = world.pixels[pix_up_right]
 	}
-	if pix_down_left >= 0 && pix_down_left <= (world.size - 1) && index2y(pix_down_left, world.width) == (y + 1) && index2x(pix_up_right, world.width) == (x + left)
+	if pix_down_left >= 0 && pix_down_left <= (world.size - 1) && index2y(pix_down_left, world.width) == (y + 1) && index2x(pix_down_left, world.width) == (x + left)
 	{
 		neighborhood.down_left = world.pixels[pix_down_left]
 	}
@@ -155,17 +154,30 @@ initpix :: proc(pixel: ^Pixel, x: int, y: int)
 	pixel.color = rl.BLACK
 	pixel.x = x
 	pixel.y = y
+
 }
 
 updateworld :: proc(world: ^World)
 {
-	x, y := mouse2world(rl.GetMousePosition(), world)
+	// if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){ 0, 0, GetScreenWidth(), GetScreenHeight()
+	// {
+	// }
 
-	index := coord2index(x, y, world.width)
+	if rl.CheckCollisionPointRec(rl.GetMousePosition(), {0, 0, f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())})
+	{
+		x, y := mouse2world(rl.GetMousePosition(), world)
 
-	pix: ^Pixel = &world.pixels[index]
+		x = math.clamp(x, 0, world.width)
+		y = math.clamp(y, 0, world.height)
 
-	mousepix(pix)
+		index := coord2index(x, y, world.width)
+
+		index = math.clamp(index, 0, world.size - 1)
+
+		pix: ^Pixel = &world.pixels[index]
+
+		mousepix(pix)
+	}
 }
 
 mousepix :: proc(pixel: ^Pixel)
@@ -231,7 +243,7 @@ main :: proc()
 		}
 
 		if rl.IsKeyPressed(.SPACE)
-		{		
+		{
 			for &pixel in world.pixels
 			{
 				updatepix(&world, &pixel)
