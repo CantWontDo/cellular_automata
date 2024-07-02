@@ -5,11 +5,29 @@ import "core:math/rand"
 import "core:math"
 import rl "vendor:raylib"
 
-import "core:time"
 
-PIXEL_SCALE :: 20
 
-FRAMES_TO_TICK :: 60
+PIXEL_SCALE :: 10
+
+SPEED_0 :: 1
+SPEED_1 :: 15
+SPEED_2 :: 30
+SPEED_3 :: 60
+SPEED_4 :: 120
+SPEED_5 :: 240
+SPEED_6 :: 480
+
+SIZE_0 :: 0
+SIZE_1 :: 1
+SIZE_2 :: 2
+SIZE_3 :: 3
+SIZE_4 :: 4
+SIZE_5 :: 5
+SIZE_6 :: 10
+SIZE_7 :: 20
+
+COLOR_ON :: rl.GRAY
+COLOR_OFF :: rl.BLACK
 
 Pixel :: struct
 {
@@ -81,9 +99,43 @@ initworld :: proc(world: ^World, width: int = 1280, height: int = 720)
 	}
 }
 
-mouse2world :: proc(mouseCoords: rl.Vector2, world: ^World) -> (x: int, y: int)
+mouse2world :: proc() -> (x: int, y: int)
 {
-	return int(mouseCoords.x) / PIXEL_SCALE, int(mouseCoords.y) / PIXEL_SCALE
+	mouse_coords := rl.GetMousePosition()
+	return int(mouse_coords.x) / PIXEL_SCALE, int(mouse_coords.y) / PIXEL_SCALE
+}
+
+mouse2worldvec :: proc() -> rl.Vector2
+{
+	mouse_coords := rl.GetMousePosition()
+	return {f32(int(mouse_coords.x) / PIXEL_SCALE), f32(int(mouse_coords.y) / PIXEL_SCALE)}
+}
+
+world_get_dist :: proc(pixel: ^Pixel, other_pixel: ^Pixel) -> int
+{
+	delta_x := other_pixel.x - pixel.x
+	delta_y := other_pixel.y - pixel.y
+
+	return int(math.sqrt(f32((delta_x * delta_x) + (delta_y * delta_y))))
+}
+
+mouse2index :: proc(world: ^World) -> (int, bool)
+{
+	if rl.CheckCollisionPointRec(rl.GetMousePosition(), {0, 0, f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())})
+	{
+		x, y := mouse2world()
+
+		x = math.clamp(x, 0, world.width)
+		y = math.clamp(y, 0, world.height)
+
+		index := coord2index(x, y, world.width)
+
+		index = math.clamp(index, 0, world.size - 1)
+
+		return index, true
+	}
+
+	return -1, false
 }
 
 snap2world :: proc(x: f32, y: f32) -> rl.Vector2
@@ -175,39 +227,30 @@ initpix :: proc(pixel: ^Pixel, x: int, y: int)
 
 }
 
-updateworld :: proc(world: ^World, live: bool = true)
+select_pixels :: proc(world: ^World, radius: int, live: bool = true)
 {
-	// if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){ 0, 0, GetScreenWidth(), GetScreenHeight()
-	// {
-	// }
 
-	if rl.CheckCollisionPointRec(rl.GetMousePosition(), {0, 0, f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())})
-	{
-		x, y := mouse2world(rl.GetMousePosition(), world)
+ 	index, succeeded := mouse2index(world)
 
-		x = math.clamp(x, 0, world.width)
-		y = math.clamp(y, 0, world.height)
-
-		index := coord2index(x, y, world.width)
-
-		index = math.clamp(index, 0, world.size - 1)
-
-		pix: ^Pixel = &world.pixels[index]
-
-		mousepix(pix, live)
+ 	if succeeded
+ 	{
+		pix: ^Pixel = &world.pixels[index]	
+		for &other_pixel in world.pixels
+		{
+			if world_get_dist(pix, &other_pixel) <= radius
+			{
+				other_pixel.next = live
+			}
+		}
 	}
-}
-
-mousepix :: proc(pixel: ^Pixel, live: bool = true)
-{
-	pixel.next = live
 }
 
 tickpix :: proc(world: ^World, pixel: ^Pixel)
 {
-	neighborhood := get_neighborhood(world, pixel)
+	// TODO(rahul): add options for sim
 
 	// Flood Fill
+	 neighborhood := get_neighborhood(world, pixel)
 	// if (neighborhood.up.on ||
 	// 	neighborhood.up_right.on ||
 	// 	neighborhood.right.on ||
@@ -258,14 +301,107 @@ updatepix :: proc(pixel: ^Pixel)
 drawpix :: proc(pixel: ^Pixel)
 {	if pixel.on
 	{
-		pixel.color = rl.WHITE
+		pixel.color = COLOR_ON
 	}
 	else
 	{
-		pixel.color = rl.BLACK
+		pixel.color = COLOR_OFF
 	}
 
 	rl.DrawRectangleV({f32(pixel.x), f32(pixel.y)} * PIXEL_SCALE, {PIXEL_SCALE, PIXEL_SCALE}, pixel.color)
+}
+
+get_speed :: proc(tick_level: int) -> int
+{
+	switch tick_level
+	{
+		case 0:
+		{
+			return SPEED_0
+		}
+		case 1:
+		{
+			return SPEED_1
+		}
+		case 2:
+		{
+			return SPEED_2
+		}
+		case 3:
+		{
+			return SPEED_3
+		}
+		case 4:
+		{
+			return SPEED_4
+		}
+		case 5:
+		{
+			return SPEED_5
+		}
+		case 6:
+		{
+			return SPEED_6
+		}
+	}
+	return 0
+}
+
+get_radius :: proc(radius_level: int) -> int
+{
+	switch radius_level
+	{
+		case 0:
+		{
+			return SIZE_0
+		}
+		case 1:
+		{
+			return SIZE_1
+		}
+		case 2:
+		{
+			return SIZE_2
+		}
+		case 3:
+		{
+			return SIZE_3
+		}
+		case 4:
+		{
+			return SIZE_4
+		}
+		case 5:
+		{
+			return SIZE_5
+		}
+		case 6:
+		{
+			return SIZE_6
+		}
+		case 7:
+		{
+			return SIZE_7
+		}
+	}
+	return 0
+}
+
+drawmouse :: proc(world: ^World, radius: int, color: rl.Color = rl.WHITE)
+{
+	index, succeeded := mouse2index(world)
+
+ 	if succeeded
+ 	{
+		pix: ^Pixel = &world.pixels[index]	
+		for &other_pixel in world.pixels
+		{
+			if world_get_dist(pix, &other_pixel) <= radius
+			{
+				rl.DrawRectangleV({f32(other_pixel.x), f32(other_pixel.y)} * PIXEL_SCALE, {PIXEL_SCALE, PIXEL_SCALE}, color)
+			}
+		}
+	}
 }
 
 main :: proc()
@@ -273,36 +409,80 @@ main :: proc()
 	world: World 
 	initworld(&world, 1280 / PIXEL_SCALE, 720 / PIXEL_SCALE)	
 
-
+	rl.DisableCursor()
 	rl.InitWindow(1280, 720, "Hello")
 
 	tick_counter: int
 
 	paused: bool
 
+	frames_to_tick := 60
+
+	tick_level := 3
+
+	radius := 0
+
+	radius_level := 0
+
 	for !rl.WindowShouldClose()
 	{
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.BLACK)
+
 		if rl.IsMouseButtonDown(.LEFT)
 		{
-			updateworld(&world)
+			select_pixels(&world, radius)
 		}
 		else if rl.IsMouseButtonDown(.RIGHT)
 		{
-			updateworld(&world, false)
+			select_pixels(&world, radius, false)
 		}
 
 		if rl.IsKeyPressed(.SPACE)
 		{
 			paused = !paused
 		}
+
+		if rl.IsKeyPressed(.DOWN)
+		{
+			tick_level -= 1
+
+			tick_level = math.clamp(tick_level, 0, 6)
+			frames_to_tick = get_speed(tick_level)
+			fmt.printf("tick_level: %v, frames_to_tick: %v\n", tick_level, frames_to_tick)
+		}
+		if rl.IsKeyPressed(.UP)
+		{
+			tick_level += 1
+
+			tick_level = math.clamp(tick_level, 0, 6)
+			frames_to_tick = get_speed(tick_level)
+			fmt.printf("tick_level: %v, frames_to_tick: %v\n", tick_level, frames_to_tick)
+		}
+
+		if rl.IsKeyPressed(.LEFT)
+		{
+			radius_level -= 1
+
+			radius_level = math.clamp(radius_level, 0, 6)
+			radius = get_radius(radius_level)
+			fmt.printf("radius_level: %v, radius: %v\n", radius_level, radius)
+		}
+		if rl.IsKeyPressed(.RIGHT)
+		{
+			radius_level += 1
+
+			radius_level = math.clamp(radius_level, 0, 6)
+			radius = get_radius(radius_level)
+			fmt.printf("radius: %v, radius: %v\n", radius_level, radius)
+		}
+
 		if !paused
 		{
 			tick_counter += 1
 		}
 
-		if tick_counter >= FRAMES_TO_TICK
+		if tick_counter >= frames_to_tick
 		{
 			for &pixel in world.pixels
 			{
@@ -316,6 +496,8 @@ main :: proc()
 			updatepix(&pixel)
 			drawpix(&pixel)
 		}	
+
+		drawmouse(&world, radius)
 		rl.EndDrawing()
 	}
 }
