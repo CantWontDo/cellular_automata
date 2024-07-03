@@ -5,9 +5,7 @@ import "core:math/rand"
 import "core:math"
 import rl "vendor:raylib"
 
-
-
-PIXEL_SCALE :: 10
+PIXEL_SCALE :: 3
 
 SPEED_0 :: 1
 SPEED_1 :: 15
@@ -17,298 +15,33 @@ SPEED_4 :: 120
 SPEED_5 :: 240
 SPEED_6 :: 480
 
-SIZE_0 :: 0
-SIZE_1 :: 1
-SIZE_2 :: 2
-SIZE_3 :: 3
-SIZE_4 :: 4
-SIZE_5 :: 5
-SIZE_6 :: 10
-SIZE_7 :: 20
+COLOR_CURSOR :: rl.WHITE
+COLOR_CURSOR_BORDER :: rl.BLACK
 
-COLOR_ON :: rl.GRAY
-COLOR_OFF :: rl.BLACK
-
-Pixel :: struct
+select_pixels :: proc(world: ^World, radius: int, arg1: int, deselect: bool)
 {
-	color : rl.Color,
-	x: int,
-	y: int,
-	on: bool,
-	next: bool
-}
-
-World :: struct
-{
-	pixels: []Pixel,
-	width: int,
-	height: int,
-	size: int
-}
-
-Neighborhood :: struct
-{
-	me: Pixel,
-	left: Pixel,
-	up_left: Pixel,
-	up: Pixel,
-	up_right: Pixel,
-	right: Pixel,
-	down_right: Pixel,
-	down: Pixel,
-	down_left: Pixel,
-}
-
-coord2index :: proc(x: int, y: int, width: int) -> int
-{
-	return (y * width) + x
-}
-
-index2y :: proc(index: int, width: int) -> int
-{
-	return index / width
-}
-
-index2x :: proc(index: int width: int) -> int
-{
-	return index % width
-}
-
-index2Coord :: proc(index: int, width: int) -> (x: int, y: int)
-{
-	return (index % width), (index / width)
-}
-
-initworld :: proc(world: ^World, width: int = 1280, height: int = 720)
-{
-	world.width = width
-	world.height = height
-
-	world.size = world.width * world.height 
-
-	if world.size == 0
-	{
-		world.size = 1
-	}
-
-	world.pixels = make([]Pixel, world.size)
-
-	for &pixel, index in world.pixels
-	{
-		initpix(&pixel, index % world.width, index / world.width)
-	}
-}
-
-mouse2world :: proc() -> (x: int, y: int)
-{
-	mouse_coords := rl.GetMousePosition()
-	return int(mouse_coords.x) / PIXEL_SCALE, int(mouse_coords.y) / PIXEL_SCALE
-}
-
-mouse2worldvec :: proc() -> rl.Vector2
-{
-	mouse_coords := rl.GetMousePosition()
-	return {f32(int(mouse_coords.x) / PIXEL_SCALE), f32(int(mouse_coords.y) / PIXEL_SCALE)}
-}
-
-world_get_dist :: proc(pixel: ^Pixel, other_pixel: ^Pixel) -> int
-{
-	delta_x := other_pixel.x - pixel.x
-	delta_y := other_pixel.y - pixel.y
-
-	return int(math.sqrt(f32((delta_x * delta_x) + (delta_y * delta_y))))
-}
-
-mouse2index :: proc(world: ^World) -> (int, bool)
-{
-	if rl.CheckCollisionPointRec(rl.GetMousePosition(), {0, 0, f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())})
-	{
-		x, y := mouse2world()
-
-		x = math.clamp(x, 0, world.width)
-		y = math.clamp(y, 0, world.height)
-
-		index := coord2index(x, y, world.width)
-
-		index = math.clamp(index, 0, world.size - 1)
-
-		return index, true
-	}
-
-	return -1, false
-}
-
-snap2world :: proc(x: f32, y: f32) -> rl.Vector2
-{
-	return {math.floor(x / PIXEL_SCALE), math.floor(y / PIXEL_SCALE)}
-}
-
-get_neighborhood :: proc(world: ^World, pixel: ^Pixel) -> Neighborhood
-{
-	neighborhood: Neighborhood
-
-	x := pixel.x
-	y := pixel.y
-
-	index := coord2index(x, y, world.width)
-
-	left := -1
-	right := 1
-	up := -world.width
-	down := world.width
-
-	neighborhood.me = pixel^
-	pix_left 	   := index + left
-	pix_up_left    := index + left + up
-	pix_up 		   := index + up
-	pix_up_right   := index + right + up
-	pix_right 	   := index + right
-	pix_down_right := index + right + down
-	pix_down 	   := index + down
-	pix_down_left  := index + left + down
-
-	if pix_left >= 0 && pix_left <= (world.size - 1) && index2x(pix_left, world.width) == (x + left)
-	{
-		neighborhood.left = world.pixels[pix_left]
-	}
-	if pix_right >= 0 && pix_right <=(world.size - 1) && index2x(pix_right, world.width) == (x + right)
-	{
-		neighborhood.right = world.pixels[pix_right]
-	}
-	if pix_up >= 0 && pix_up <= (world.size - 1) && index2y(pix_up, world.width) == (y - 1)
-	{
-		neighborhood.up = world.pixels[pix_up]
-	}
-	if pix_down >= 0 && pix_down <=(world.size - 1) && index2y(pix_down, world.width) == (y + 1)
-	{
-		neighborhood.down = world.pixels[pix_down]
-	}
-	if pix_up_left >= 0 && pix_up_left <= (world.size - 1) && index2y(pix_up_left, world.width) == (y - 1) && index2x(pix_up_left, world.width) == (x + left)
-	{
-		neighborhood.up_left = world.pixels[pix_up_left]
-	}
-	if pix_up_right >= 0 && pix_up_right <= (world.size - 1) && index2y(pix_up_right, world.width) == (y - 1) && index2x(pix_up_right, world.width) == (x + right)
-	{
-		neighborhood.up_right = world.pixels[pix_up_right]
-	}
-	if pix_down_left >= 0 && pix_down_left <= (world.size - 1) && index2y(pix_down_left, world.width) == (y + 1) && index2x(pix_down_left, world.width) == (x + left)
-	{
-		neighborhood.down_left = world.pixels[pix_down_left]
-	}
-	if pix_down_right >= 0 && pix_down_right <= (world.size - 1) && index2y(pix_down_right, world.width) == (y + 1) && index2x(pix_down_right, world.width) == (x + right)
-	{
-		neighborhood.down_right = world.pixels[pix_down_right]
-	}
-
-	return neighborhood
-}
-
-neighbor_count :: proc(neighborhood: ^Neighborhood) -> int
-{
-	neighbors: int
-
-	neighbors += int(neighborhood.up.on)
-	neighbors += int(neighborhood.up_left.on)
-	neighbors += int(neighborhood.up_right.on)
-	neighbors += int(neighborhood.right.on)
-	neighbors += int(neighborhood.down_right.on)
-	neighbors += int(neighborhood.down.on)
-	neighbors += int(neighborhood.down_left.on)
-	neighbors += int(neighborhood.left.on)
-
-	return neighbors
-}
-
-initpix :: proc(pixel: ^Pixel, x: int, y: int)
-{
-	pixel.color = rl.BLACK
-	pixel.x = x
-	pixel.y = y
-
-}
-
-select_pixels :: proc(world: ^World, radius: int, live: bool = true)
-{
-
  	index, succeeded := mouse2index(world)
 
  	if succeeded
- 	{
-		pix: ^Pixel = &world.pixels[index]	
-		for &other_pixel in world.pixels
+ 	{	
+		pixel := init_pixel_index(index, world.width, world.size)
+		for other_index in 0..<world.size
 		{
-			if world_get_dist(pix, &other_pixel) <= radius
+			other_pixel := init_pixel_index(other_index, world.width, world.size)
+			dist := world_get_dist(&pixel, &other_pixel)
+			if dist <= radius
 			{
-				other_pixel.next = live
+				if deselect
+				{
+					world.deselect_pixel(&other_pixel, arg1)
+				}
+				else
+				{
+					world.select_pixel(&other_pixel, arg1)
+				}	
 			}
 		}
 	}
-}
-
-tickpix :: proc(world: ^World, pixel: ^Pixel)
-{
-	// TODO(rahul): add options for sim
-
-	// Flood Fill
-	 neighborhood := get_neighborhood(world, pixel)
-	// if (neighborhood.up.on ||
-	// 	neighborhood.up_right.on ||
-	// 	neighborhood.right.on ||
-	// 	neighborhood.down_right.on ||
-	// 	neighborhood.down.on ||
-	// 	neighborhood.down_left.on ||
-	// 	neighborhood.left.on ||
-	// 	neighborhood.up_left.on)
-	// {
-	// 	pixel.next = true
-	// }
-	// else if (!pixel.on)
-	// {
-	// 	pixel.next = false
-	// }
-
-	neighbors := neighbor_count(&neighborhood)
-
-	if pixel.on
-	{
-		if neighbors < 2
-		{
-			pixel.next = false
-		}
-		else if neighbors == 2 || neighbors == 3
-		{
-			pixel.next = true
-		}
-		else if neighbors > 3
-		{
-			pixel.next = false
-		}
-	}
-	else
-	{
-		if neighbors == 3
-		{
-			pixel.next = true
-		}
-	}
-}
-
-updatepix :: proc(pixel: ^Pixel)
-{
-	pixel.on = pixel.next
-}
-
-drawpix :: proc(pixel: ^Pixel)
-{	if pixel.on
-	{
-		pixel.color = COLOR_ON
-	}
-	else
-	{
-		pixel.color = COLOR_OFF
-	}
-
-	rl.DrawRectangleV({f32(pixel.x), f32(pixel.y)} * PIXEL_SCALE, {PIXEL_SCALE, PIXEL_SCALE}, pixel.color)
 }
 
 get_speed :: proc(tick_level: int) -> int
@@ -347,69 +80,49 @@ get_speed :: proc(tick_level: int) -> int
 	return 0
 }
 
-get_radius :: proc(radius_level: int) -> int
+draw_mouse :: proc(world: ^World, radius: int)
 {
-	switch radius_level
-	{
-		case 0:
-		{
-			return SIZE_0
-		}
-		case 1:
-		{
-			return SIZE_1
-		}
-		case 2:
-		{
-			return SIZE_2
-		}
-		case 3:
-		{
-			return SIZE_3
-		}
-		case 4:
-		{
-			return SIZE_4
-		}
-		case 5:
-		{
-			return SIZE_5
-		}
-		case 6:
-		{
-			return SIZE_6
-		}
-		case 7:
-		{
-			return SIZE_7
-		}
-	}
-	return 0
-}
-
-drawmouse :: proc(world: ^World, radius: int, color: rl.Color = rl.WHITE)
-{
-	index, succeeded := mouse2index(world)
+ 	index, succeeded := mouse2index(world)
 
  	if succeeded
- 	{
-		pix: ^Pixel = &world.pixels[index]	
-		for &other_pixel in world.pixels
+ 	{	
+		pixel := init_pixel_index(index, world.width, world.size)
+		for other_index in 0..<world.size
 		{
-			if world_get_dist(pix, &other_pixel) <= radius
+			other_pixel := init_pixel_index(other_index, world.width, world.size)
+			dist := world_get_dist(&pixel, &other_pixel)
+			if dist == radius
 			{
-				rl.DrawRectangleV({f32(other_pixel.x), f32(other_pixel.y)} * PIXEL_SCALE, {PIXEL_SCALE, PIXEL_SCALE}, color)
+				draw(&other_pixel, COLOR_CURSOR)
+			}
+			if dist == (radius + 1)
+			{
+				draw(&other_pixel, COLOR_CURSOR_BORDER)
+			}
+			if dist == (radius + 2)
+			{
+				draw(&other_pixel, COLOR_CURSOR_BORDER)
+			}
+			if dist == (radius - 1)
+			{
+				draw(&other_pixel, COLOR_CURSOR_BORDER)
 			}
 		}
 	}
 }
 
+draw :: proc(pixel: ^Pixel, color: rl.Color)
+{
+	rl.DrawRectangleV({f32(pixel.x), f32(pixel.y)} * PIXEL_SCALE, {PIXEL_SCALE, PIXEL_SCALE}, color)
+}
+
 main :: proc()
 {
 	world: World 
-	initworld(&world, 1280 / PIXEL_SCALE, 720 / PIXEL_SCALE)	
+	init_world(&world)
 
 	rl.DisableCursor()
+	rl.HideCursor()
 	rl.InitWindow(1280, 720, "Hello")
 
 	tick_counter: int
@@ -428,15 +141,6 @@ main :: proc()
 	{
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.BLACK)
-
-		if rl.IsMouseButtonDown(.LEFT)
-		{
-			select_pixels(&world, radius)
-		}
-		else if rl.IsMouseButtonDown(.RIGHT)
-		{
-			select_pixels(&world, radius, false)
-		}
 
 		if rl.IsKeyPressed(.SPACE)
 		{
@@ -460,21 +164,28 @@ main :: proc()
 			fmt.printf("tick_level: %v, frames_to_tick: %v\n", tick_level, frames_to_tick)
 		}
 
-		if rl.IsKeyPressed(.LEFT)
+		radius += int(rl.GetMouseWheelMove())
+		if radius < 0
 		{
-			radius_level -= 1
-
-			radius_level = math.clamp(radius_level, 0, 6)
-			radius = get_radius(radius_level)
-			fmt.printf("radius_level: %v, radius: %v\n", radius_level, radius)
+			radius = 0
 		}
+
 		if rl.IsKeyPressed(.RIGHT)
 		{
-			radius_level += 1
+			radius += 1
+		}
+		if rl.IsKeyPressedRepeat(.RIGHT)
+		{
+			radius += 4
+		}
 
-			radius_level = math.clamp(radius_level, 0, 6)
-			radius = get_radius(radius_level)
-			fmt.printf("radius: %v, radius: %v\n", radius_level, radius)
+		if rl.IsMouseButtonDown(.LEFT)
+		{
+			select_pixels(&world, radius, 255, false)
+		}
+		if rl.IsMouseButtonDown(.RIGHT)
+		{
+			select_pixels(&world, radius, 255, true)
 		}
 
 		if !paused
@@ -484,20 +195,21 @@ main :: proc()
 
 		if tick_counter >= frames_to_tick
 		{
-			for &pixel in world.pixels
+			for index in 0..<world.size
 			{
-				tickpix(&world, &pixel)
+				pixel := init_pixel_index(index, world.width, world.size)
+				world.tick_pixel(&world, &pixel)
 			}
 			tick_counter = 0
 		}
 
-		for &pixel in world.pixels
-		{
-			updatepix(&pixel)
-			drawpix(&pixel)
+		for index in 0..<world.size {
+			pixel := init_pixel_index(index, world.width, world.size)
+			world.update_pixel(&world, &pixel)
+			world.draw_pixel(&pixel)
 		}	
 
-		drawmouse(&world, radius)
+		draw_mouse(&world, radius)
 		rl.EndDrawing()
 	}
 }
