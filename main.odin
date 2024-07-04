@@ -80,6 +80,22 @@ get_speed :: proc(tick_level: int) -> int
 	return 0
 }
 
+get_type :: proc(level: int) -> WorldType
+{
+	switch level
+	{
+		case 0:
+		{
+			return .Paint
+		}
+		case 1:
+		{
+			return .Life
+		}
+	}
+	return .Paint
+}
+
 draw_mouse :: proc(world: ^World, radius: int)
 {
  	index, succeeded := mouse2index(world)
@@ -137,6 +153,8 @@ main :: proc()
 
 	radius_level := 0
 
+	type := 0
+
 	for !rl.WindowShouldClose()
 	{
 		rl.BeginDrawing()
@@ -179,6 +197,22 @@ main :: proc()
 			radius += 4
 		}
 
+		last_type := type
+		if rl.IsKeyPressed(.LEFT_SHIFT)
+		{
+			type += 1
+			if type > 1
+			{
+				type = 0
+			}
+		}
+
+		if last_type != type
+		{
+			new_type := get_type(type)
+			change_world(&world, new_type)
+		}
+
 		if rl.IsMouseButtonDown(.LEFT)
 		{
 			select_pixels(&world, radius, 255, false)
@@ -186,6 +220,11 @@ main :: proc()
 		if rl.IsMouseButtonDown(.RIGHT)
 		{
 			select_pixels(&world, radius, 255, true)
+		}
+
+		if rl.IsKeyPressed(.SPACE)
+		{
+			world.reset_world()
 		}
 
 		if !paused

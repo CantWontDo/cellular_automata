@@ -9,10 +9,12 @@ TickPixelCallback :: proc(world: ^World, pixel: ^Pixel)
 UpdatePixelCallback :: proc(world: ^World, pixel: ^Pixel)
 DrawPixelCallback :: proc(pixel: ^Pixel)
 DeleteWorldCallback :: proc()
+ResetWorldCallback :: proc()
 
 WorldType :: enum
 {
-	Paint	
+	Paint,
+	Life
 }
 
 World :: struct
@@ -27,7 +29,8 @@ World :: struct
 	select_pixel: SelectPixelCallback,
 	deselect_pixel: DeselectPixelCallback,
 	create_world: CreateWorldCallback,
-	delete_world: DeleteWorldCallback
+	delete_world: DeleteWorldCallback,
+	reset_world: ResetWorldCallback
 }
 
 init_world :: proc(world: ^World, width: int = 1280, height: int = 720)
@@ -55,20 +58,33 @@ change_world :: proc(world: ^World, type: WorldType, first_time: bool = false)
 {
 	if !first_time
 	{
-		world.delete_world()
+		//world.delete_world()
 	}	
 	switch type
 	{
 		case .Paint:
 		{
-			world.create_world = paint_create_world
-			world.init_pixel = paint_init_pixel
-			world.select_pixel = paint_select_pixel
+			world.create_world =   paint_create_world
+			world.init_pixel =     paint_init_pixel
+			world.select_pixel =   paint_select_pixel
 			world.deselect_pixel = paint_deselect_pixel
-			world.tick_pixel = paint_tick_pixel
-			world.update_pixel = paint_update_pixel
-			world.draw_pixel = paint_draw_pixel
-			world.delete_world = paint_delete_world
+			world.tick_pixel =     paint_tick_pixel
+			world.update_pixel =   paint_update_pixel
+			world.draw_pixel =     paint_draw_pixel
+			world.delete_world =   paint_delete_world
+			world.reset_world =    paint_reset_world
+		}
+		case .Life:
+		{
+			world.create_world =   life_create_world
+			world.init_pixel =     life_init_pixel
+			world.select_pixel =   life_select_pixel
+			world.deselect_pixel = life_deselect_pixel
+			world.tick_pixel =     life_tick_pixel
+			world.update_pixel =   life_update_pixel
+			world.draw_pixel =     life_draw_pixel
+			world.delete_world =   life_delete_world
+			world.reset_world =    life_reset_world
 		}
 	}
 

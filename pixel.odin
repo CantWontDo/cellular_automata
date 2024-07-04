@@ -16,10 +16,8 @@ init_pixel_coords :: proc(x: int, y: int, world_width: int, world_size: int) -> 
 
 	if index < 0 || index > (world_size - 1)
 	{
-		pixel.x = -1
-		pixel.y = -1
 		pixel.index = -1
-		fmt.printf("index %v out of range!\n", index)
+		fmt.printf("index %v out of range %v!\n", index, world_size - 1)
 	}
 	else
 	{
@@ -35,8 +33,6 @@ init_pixel_index :: proc(index: int, world_width: int, world_size: int) -> (pixe
 {
 	if index < 0 || index > (world_size - 1)
 	{
-		pixel.x = -1
-		pixel.y = -1
 		pixel.index = -1
 		fmt.printf("index %v out of range!\n", index)
 	}

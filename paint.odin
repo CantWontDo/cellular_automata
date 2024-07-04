@@ -2,7 +2,6 @@ package pixel_sim
 import rl "vendor:raylib"
 
 import "core:math/rand"
-import "core:fmt"
 
 Paint :: struct
 {
@@ -43,7 +42,6 @@ paint_tick_pixel :: proc(world: ^World, pixel: ^Pixel)
 paint_update_pixel :: proc(world: ^World, pixel: ^Pixel)
 {
 	paint := paint_world[pixel.index]
-	
 }
 
 paint_draw_pixel :: proc(pixel: ^Pixel)
@@ -55,6 +53,13 @@ paint_draw_pixel :: proc(pixel: ^Pixel)
 
 paint_delete_world :: proc()
 {
-	fmt.println("deleted paint pixel")
 	delete(paint_world)
+}
+
+paint_reset_world :: proc()
+{
+	for &paint in paint_world
+	{
+		paint.color = rl.BLACK
+	}
 }
