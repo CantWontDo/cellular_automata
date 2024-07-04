@@ -2,6 +2,8 @@ package pixel_sim
 import rl "vendor:raylib"
 import "core:math"
 
+COLOR_BACKGROUND :: rl.Color{12, 10, 16, 255}
+
 coord2index :: proc(x: int, y: int, width: int) -> int
 {
 	return (y * width) + x
@@ -44,7 +46,7 @@ world_get_dist :: proc(pixel: ^Pixel, other_pixel: ^Pixel) -> int
 
 mouse2index :: proc(world: ^World) -> (int, bool)
 {
-	if rl.CheckCollisionPointRec(rl.GetMousePosition(), {0, 0, f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())})
+	if rl.CheckCollisionPointRec(rl.GetMousePosition(), {0, 0, f32(rl.GetRenderWidth()), f32(rl.GetRenderHeight())})
 	{
 		x, y := mouse2world()
 

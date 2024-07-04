@@ -1,7 +1,7 @@
 package pixel_sim
 import "core:fmt"
 
-CreateWorldCallback :: proc(world_size: int)
+CreateWorldCallback :: proc(world: ^World)
 InitPixelCallback ::  proc(world: ^World, pixel: ^Pixel)
 SelectPixelCallback :: proc(pixel: ^Pixel, arg1: int)
 DeselectPixelCallback :: proc(pixel: ^Pixel, arg1: int)
@@ -14,7 +14,9 @@ ResetWorldCallback :: proc()
 WorldType :: enum
 {
 	Paint,
-	Life
+	Life,
+	Ant,
+	Sand
 }
 
 World :: struct
@@ -45,7 +47,7 @@ init_world :: proc(world: ^World, width: int = 1280, height: int = 720)
 		world.size = 1
 	}
 
-	change_world(world, .Paint, true)
+	change_world(world, .Sand)
 
 	for index in 0..<world.size
 	{
@@ -54,12 +56,9 @@ init_world :: proc(world: ^World, width: int = 1280, height: int = 720)
 	}
 }
 
-change_world :: proc(world: ^World, type: WorldType, first_time: bool = false)
+change_world :: proc(world: ^World, type: WorldType)
 {
-	if !first_time
-	{
-		//world.delete_world()
-	}	
+	fmt.println(type)
 	switch type
 	{
 		case .Paint:
@@ -86,7 +85,31 @@ change_world :: proc(world: ^World, type: WorldType, first_time: bool = false)
 			world.delete_world =   life_delete_world
 			world.reset_world =    life_reset_world
 		}
+		case .Ant:
+		{
+			world.create_world =   ant_create_world
+			world.init_pixel =     ant_init_pixel
+			world.select_pixel =   ant_select_pixel
+			world.deselect_pixel = ant_deselect_pixel
+			world.tick_pixel =     ant_tick_pixel
+			world.update_pixel =   ant_update_pixel
+			world.draw_pixel =     ant_draw_pixel
+			world.delete_world =   ant_delete_world
+			world.reset_world =    ant_reset_world
+		}
+		case .Sand:
+		{
+			world.create_world =   sand_create_world
+			world.init_pixel =     sand_init_pixel
+			world.select_pixel =   sand_select_pixel
+			world.deselect_pixel = sand_deselect_pixel
+			world.tick_pixel =     sand_tick_pixel
+			world.update_pixel =   sand_update_pixel
+			world.draw_pixel =     sand_draw_pixel
+			world.delete_world =   sand_delete_world
+			world.reset_world =    sand_reset_world
+		}
 	}
 
-	world.create_world(world.size)
+	world.create_world(world)
 }

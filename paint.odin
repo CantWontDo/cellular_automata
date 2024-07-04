@@ -3,6 +3,8 @@ import rl "vendor:raylib"
 
 import "core:math/rand"
 
+COLOR_CLEAR :: rl.Color{0, 0, 0, 0}
+
 Paint :: struct
 {
 	color: rl.Color
@@ -10,16 +12,19 @@ Paint :: struct
 
 paint_world: []Paint
 
-paint_create_world :: proc(world_size: int)
+paint_create_world :: proc(world: ^World)
 {
-	paint_world = make([]Paint, world_size)
+	if paint_world == nil
+	{
+		paint_world = make([]Paint, world.size)
+	}
 }
 
 paint_init_pixel :: proc(world: ^World, pixel: ^Pixel)
 {
 	paint := paint_world[pixel.index]
 
-	paint.color = rl.BLACK
+	paint.color = COLOR_CLEAR
 }
 
 paint_select_pixel :: proc(pixel: ^Pixel, arg1: int)
@@ -31,7 +36,7 @@ paint_select_pixel :: proc(pixel: ^Pixel, arg1: int)
 paint_deselect_pixel :: proc(pixel: ^Pixel, arg1: int)
 {
 	paint := &(paint_world[pixel.index])
-	paint.color = rl.BLACK
+	paint.color = COLOR_BACKGROUND
 }
 
 paint_tick_pixel :: proc(world: ^World, pixel: ^Pixel)

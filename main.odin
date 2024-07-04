@@ -4,8 +4,9 @@ import "core:fmt"
 import "core:math/rand"
 import "core:math"
 import rl "vendor:raylib"
+import "core:time"
 
-PIXEL_SCALE :: 3
+PIXEL_SCALE :: 5
 
 SPEED_0 :: 1
 SPEED_1 :: 15
@@ -16,7 +17,6 @@ SPEED_5 :: 240
 SPEED_6 :: 480
 
 COLOR_CURSOR :: rl.WHITE
-COLOR_CURSOR_BORDER :: rl.BLACK
 
 select_pixels :: proc(world: ^World, radius: int, arg1: int, deselect: bool)
 {
@@ -84,14 +84,10 @@ get_type :: proc(level: int) -> WorldType
 {
 	switch level
 	{
-		case 0:
-		{
-			return .Paint
-		}
-		case 1:
-		{
-			return .Life
-		}
+		case 0: return .Paint
+		case 1: return .Life
+		case 2: return .Ant
+		case 3: return .Sand
 	}
 	return .Paint
 }
@@ -111,18 +107,6 @@ draw_mouse :: proc(world: ^World, radius: int)
 			{
 				draw(&other_pixel, COLOR_CURSOR)
 			}
-			if dist == (radius + 1)
-			{
-				draw(&other_pixel, COLOR_CURSOR_BORDER)
-			}
-			if dist == (radius + 2)
-			{
-				draw(&other_pixel, COLOR_CURSOR_BORDER)
-			}
-			if dist == (radius - 1)
-			{
-				draw(&other_pixel, COLOR_CURSOR_BORDER)
-			}
 		}
 	}
 }
@@ -135,11 +119,15 @@ draw :: proc(pixel: ^Pixel, color: rl.Color)
 main :: proc()
 {
 	world: World 
-	init_world(&world)
 
 	rl.DisableCursor()
 	rl.HideCursor()
-	rl.InitWindow(1280, 720, "Hello")
+
+	width : i32 = 1280
+	height : i32 = 720
+
+	rl.InitWindow(width, height, "Hello")
+	init_world(&world, int(width), int(height))
 
 	tick_counter: int
 
@@ -147,18 +135,18 @@ main :: proc()
 
 	frames_to_tick := 60
 
-	tick_level := 3
+	tick_level := 0
 
 	radius := 0
 
 	radius_level := 0
 
-	type := 0
+	type := 3
 
 	for !rl.WindowShouldClose()
 	{
 		rl.BeginDrawing()
-		rl.ClearBackground(rl.BLACK)
+		rl.ClearBackground({12, 10, 16, 255})
 
 		if rl.IsKeyPressed(.SPACE)
 		{
@@ -201,9 +189,9 @@ main :: proc()
 		if rl.IsKeyPressed(.LEFT_SHIFT)
 		{
 			type += 1
-			if type > 1
+			if type > len(WorldType)
 			{
-				type = 0
+				type = 1
 			}
 		}
 
@@ -217,12 +205,12 @@ main :: proc()
 		{
 			select_pixels(&world, radius, 255, false)
 		}
-		if rl.IsMouseButtonDown(.RIGHT)
+		if rl.IsMouseButtonDown(.RIGHT) 
 		{
 			select_pixels(&world, radius, 255, true)
 		}
 
-		if rl.IsKeyPressed(.SPACE)
+		if rl.IsKeyPressed(.BACKSPACE)
 		{
 			world.reset_world()
 		}
@@ -234,21 +222,33 @@ main :: proc()
 
 		if tick_counter >= frames_to_tick
 		{
+			start := time.now()
 			for index in 0..<world.size
 			{
 				pixel := init_pixel_index(index, world.width, world.size)
 				world.tick_pixel(&world, &pixel)
 			}
+			end := time.now()
+
+			ms := (end._nsec - start._nsec) / 1000
+			fmt.printf("ms to tick: %v\n", ms)
 			tick_counter = 0
 		}
 
+		start := time.now()
 		for index in 0..<world.size {
 			pixel := init_pixel_index(index, world.width, world.size)
 			world.update_pixel(&world, &pixel)
 			world.draw_pixel(&pixel)
 		}	
+		end := time.now()
+		ms := (end._nsec - start._nsec) / 1000
+		if tick_counter == 0
+		{
+			fmt.printf("ms to update and draw: %v\n", ms)
+		}
+		draw_mouse(&world, radius)	
 
-		draw_mouse(&world, radius)
 		rl.EndDrawing()
 	}
 }

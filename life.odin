@@ -1,8 +1,10 @@
 package pixel_sim
 import rl "vendor:raylib"
 
+import "core:fmt"
+import "core:testing"
+
 COLOR_ON :: rl.GRAY
-COLOR_OFF :: rl.BLACK
 
 Life :: struct
 {
@@ -12,9 +14,12 @@ Life :: struct
 
 life_world: []Life
 
-life_create_world :: proc(world_size: int)
+life_create_world :: proc(world: ^World)
 {
-	life_world = make([]Life, world_size)
+	if life_world == nil
+	{
+		life_world = make([]Life, world.size)
+	}
 }
 
 life_init_pixel :: proc(world: ^World, pixel: ^Pixel)
@@ -59,12 +64,13 @@ neighbor_count :: proc (neighborhood: ^Neighborhood) -> (neighbor: int)
 	return neighbor
 }
 
+
 life_tick_pixel :: proc(world: ^World, pixel: ^Pixel)
 {	
-	neighborhood := get_neighborhood_wrap(world, pixel)
+	neighborhood := get_neighborhood(world, pixel, true)
 	neighbor_count := neighbor_count(&neighborhood)
 
-	life := life_world[pixel.index]
+	life := &life_world[pixel.index]
 
 	if life.on
 	{
@@ -72,11 +78,11 @@ life_tick_pixel :: proc(world: ^World, pixel: ^Pixel)
 		{
 			life.next = false
 		}
-		else if neighbor_count == 2 || neighbor_count == 3
+		if neighbor_count == 2 || neighbor_count == 3
 		{
 			life.next = true
 		}
-		else if neighbor_count > 3
+		if neighbor_count > 3
 		{
 			life.next = false
 		}
@@ -91,8 +97,8 @@ life_tick_pixel :: proc(world: ^World, pixel: ^Pixel)
 }
 
 life_update_pixel :: proc(world: ^World, pixel: ^Pixel)
-{
-	life := life_world[pixel.index]
+{	
+	life := &life_world[pixel.index]
 	life.on = life.next
 }
 
@@ -100,8 +106,15 @@ life_draw_pixel :: proc(pixel: ^Pixel)
 {
 	life := &life_world[pixel.index]
 
-	color := life.on ? COLOR_ON : COLOR_OFF
-	draw(pixel, color)
+	if life.on
+	{
+		draw(pixel, COLOR_ON)
+	}
+	else
+	{
+		draw(pixel, COLOR_BACKGROUND)
+	}
+
 }
 
 life_delete_world :: proc()
