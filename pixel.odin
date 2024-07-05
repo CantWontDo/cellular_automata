@@ -1,4 +1,4 @@
-package pixel_sim
+package cellular_automata
 
 import "core:fmt"
 import "core:math"

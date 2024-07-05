@@ -1,4 +1,4 @@
-package pixel_sim
+package cellular_automata
 import rl "vendor:raylib"
 
 import "core:math/rand"

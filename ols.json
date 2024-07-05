@@ -1,7 +1,7 @@
 {
 	"$schema": "https://raw.githubusercontent.com/DanielGavin/ols/master/misc/ols.schema.json",
 	"collections": [
-		{ "name": "pixel_sim", "path": "C:/odin_code/pixel_sim" }
+		{ "name": "cellular_automata", "path": "C:/odin_code/cellular_automata" }
 	],
 	"enable_semantic_tokens": true,
 	"enable_document_symbols": true,

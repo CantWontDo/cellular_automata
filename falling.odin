@@ -1,4 +1,4 @@
-package pixel_sim
+package cellular_automata
 import rl "vendor:raylib"
 
 import "core:math/rand"
@@ -44,6 +44,7 @@ sand_deselect_pixel :: proc(pixel: ^Pixel, arg1: int)
 {
 	sand := &(sand_world[pixel.index])
 	sand.next = false
+	sand.on = false
 }
 
 sand_tick_pixel :: proc(world: ^World, pixel: ^Pixel)
@@ -53,16 +54,13 @@ sand_tick_pixel :: proc(world: ^World, pixel: ^Pixel)
 
 	down := &sand_world[neighborhood.down.index]
 
-	if sand.on && neighborhood.down.index != -1
+	if sand.on
 	{
-		if !down.on
+		if !down.on && neighborhood.down.index != -1
 		{
 			down.next = true
+			sand.on = false
 			sand.next = false
-		}
-		else
-		{
-			sand.next = true
 		}
 	}
 }
@@ -97,5 +95,6 @@ sand_reset_world :: proc()
 	for &sand in sand_world
 	{
 		sand.next = false
+		sand.on = false
 	}
 }

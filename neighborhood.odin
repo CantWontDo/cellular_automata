@@ -1,4 +1,4 @@
-package pixel_sim
+package cellular_automata
 
 import "core:math"
 
@@ -43,11 +43,6 @@ get_neighborhood :: proc(world: ^World, pixel: ^Pixel, wrap_around: bool = false
 				if (neighbor_row < 0) do neighbor_row = world.height - 1
 				if (neighbor_col > world.width - 1) do neighbor_col = 0
 				if (neighbor_row > world.height - 1) do neighbor_row = 0
-			}
-			else
-			{
-				neighbor_col = math.clamp(neighbor_col, 0, world.width - 1)
-				neighbor_row = math.clamp(neighbor_row, 0, world.height - 1)
 			}
 
 			if row == y - 1

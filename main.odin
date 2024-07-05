@@ -1,4 +1,4 @@
-package pixel_sim
+package cellular_automata
 
 import "core:fmt"
 import "core:math/rand"
@@ -6,7 +6,7 @@ import "core:math"
 import rl "vendor:raylib"
 import "core:time"
 
-PIXEL_SCALE :: 5
+PIXEL_SCALE :: 6
 
 SPEED_0 :: 1
 SPEED_1 :: 15
@@ -128,7 +128,7 @@ main :: proc()
 
 	rl.InitWindow(width, height, "Hello")
 	init_world(&world, int(width), int(height))
-
+	rl.SetTargetFPS(60)
 	tick_counter: int
 
 	paused: bool
@@ -222,32 +222,23 @@ main :: proc()
 
 		if tick_counter >= frames_to_tick
 		{
-			start := time.now()
 			for index in 0..<world.size
 			{
 				pixel := init_pixel_index(index, world.width, world.size)
 				world.tick_pixel(&world, &pixel)
 			}
-			end := time.now()
-
-			ms := (end._nsec - start._nsec) / 1000
-			fmt.printf("ms to tick: %v\n", ms)
 			tick_counter = 0
 		}
 
-		start := time.now()
 		for index in 0..<world.size {
 			pixel := init_pixel_index(index, world.width, world.size)
 			world.update_pixel(&world, &pixel)
 			world.draw_pixel(&pixel)
 		}	
-		end := time.now()
-		ms := (end._nsec - start._nsec) / 1000
-		if tick_counter == 0
-		{
-			fmt.printf("ms to update and draw: %v\n", ms)
-		}
+
 		draw_mouse(&world, radius)	
+
+		rl.DrawFPS(10, 10)
 
 		rl.EndDrawing()
 	}
